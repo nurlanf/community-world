@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: odoo-demo
+  labels:
+    app: odoo-demo
+spec:
+  selector:
+    matchLabels:
+      app: odoo-demo
+  template:
+    metadata:
+      labels:
+        app: odoo-demo
+    spec:
+      restartPolicy: "Always"
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+      - name: odoo-demo
+        image: docker.io/gcr.io/leafy-momentum-239412/odoo-demo:13.0
+        imagePullPolicy: "Always"
+        command:
+          - "/bin/bash"
+          - "-ec"
+          - |
+            wait-for-psql.py --db_host ${HOST} --db_user odoo --db_password $POSTGRES_PASSWORD --db_port $POSTGRESQL_PORT_NUMBER --timeout 30
+            if ! psql -h ${HOST} -lqt | cut -d \| -f 1 | grep -qw ${DEMO_DB}; then
+              createdb ${DEMO_DB} -h ${HOST} -U odoo
+              odoo -i ${MODULES_LIST} --db_host=${HOST} -d ${DEMO_DB} --stop-after-init
+            fi
+            odoo --db_host=${HOST} -d ${DEMO_DB}
+        env:
+        - name: DEMO_DB
+          value: "demo"
+        - name: MODULES_LIST
+          value: sale_management,purchase,crm,stock
+        - name: HOST
+          value: localhost
+        - name: POSTGRESQL_PORT_NUMBER
+          value: "5432"
+        - name: POSTGRES_USER
+          value: "odoo"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: demo-odoo-postgresql
+              key: postgresql-password
+        - name: DEMO_USERNAME
+          value: "admin"
+        - name: DEMO_PASSWORD
+          value: "admin"
+        ports:
+        - name: http
+          containerPort: 8069
+        readinessProbe:
+          httpGet:
+            port: 8069
+            path: /
+          initialDelaySeconds: 100
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            port: 8069
+            path: /
+          initialDelaySeconds: 300
+          periodSeconds: 30
+
+        # readinessProbe:
+        #   exec:
+        #     command:
+        #     - "bash"
+        #     - "-ec"
+        #     - |
+        #       curl --fail -b /tmp/cookies \
+        #         --cookie-jar /tmp/cookies -s -H \
+        #         "Content-Type: application/json" -X POST -d \
+        #         '{"jsonrpc":"2.0","method":"call","params":{"method":"list","service":"db","args":{}}}' \
+        #         0.0.0.0:8069/jsonrpc
+        #   initialDelaySeconds: 30
+        #   periodSeconds: 10
+        #   failureThreshold: 10
+        # livenessProbe:
+        #   exec:
+        #     command:
+        #     - "bash"
+        #     - "-ec"
+        #     - |
+        #       curl --fail -b /tmp/cookies \
+        #         --cookie-jar /tmp/cookies -s -H \
+        #         "Content-Type: application/json" -X POST -d \
+        #         '{"jsonrpc":"2.0","method":"call","params":{"method":"list","service":"db","args":{}}}' \
+        #         0.0.0.0:8069/jsonrpc
+        #   initialDelaySeconds: 60
+        #   failureThreshold: 1
+        #   periodSeconds: 10
+      - name: postgre-odoo-demo
+        image: postgres:10
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/postgres
+        - name: POSTGRES_USER
+          value: odoo
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: demo-odoo-postgresql
+        - name: POSTGRES_DB
+          value: postgres

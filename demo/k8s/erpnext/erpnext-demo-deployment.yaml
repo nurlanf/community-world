@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-erpnext
+  labels:
+    app: demo-erpnext
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: demo-erpnext
+  template:
+    metadata:
+      labels:
+        app: demo-erpnext
+    spec:
+      containers:
+      - name: demo-erpnext
+        image: pipech/erpnext-docker-debian:mas-py3-latest
+        imagePullPolicy: "Always"
+        env:
+        - name: ADMIN_PASSWD
+          value: "admin"
+        command:
+        - "/bin/bash"
+        - "-ec"
+        - |
+          sudo service mysql start
+          bench set-admin-password ${ADMIN_PASSWD}
+          exec entrypoint.sh

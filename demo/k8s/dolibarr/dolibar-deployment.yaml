@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-dolibarr
+  labels:
+    app: demo-dolibarr
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: demo-dolibarr
+  template:
+    metadata:
+      labels:
+        app: demo-dolibarr
+    spec:
+      containers:
+      - name: dolibarr
+        image: tuxgasy/dolibarr #gcr.io/leafy-momentum-239412/demo/dolibarr:9.0.0-2
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        env:
+        - name: PHP_INI_DATE_TIMEZONE
+          value: "Asia/Baku"
+        - name: DOLI_DB_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: DOLI_DB_USER
+          value: "root"
+        - name: DOLI_DB_PASSWORD
+          value: "root"
+        - name: DOLI_DB_NAME
+          value: "dolibarr"
+        - name: DOLI_URL_ROOT
+          value: 'http://0.0.0.0'
+        - name: WWW_USER_ID
+          value: "1000"
+        - name: WWW_GROUP_ID
+          value: "1000"
+      - name: mariadb
+        image: mariadb:10
+        imagePullPolicy: "IfNotPresent"
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "root"
+        - name: MYSQL_DATABASE
+          value: "dolibarr"
+        # - name: MYSQL_USERNAME
+        #   value: "dolibarr"
+        # - name: MYSQL_PASSWORD
+        #   value: "DoliBARRRss122A"
+        # - name: MYSQL_RANDOM_ROOT_PASSWORD
+        #   value: "no"
