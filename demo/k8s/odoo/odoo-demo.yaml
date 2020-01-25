@@ -56,46 +56,15 @@ spec:
         - name: http
           containerPort: 8069
         readinessProbe:
-          httpGet:
+          tcpSocket:
             port: 8069
-            path: /
           initialDelaySeconds: 100
           periodSeconds: 10
         livenessProbe:
-          httpGet:
+          tcpSocket:
             port: 8069
-            path: /
           initialDelaySeconds: 300
           periodSeconds: 30
-
-        # readinessProbe:
-        #   exec:
-        #     command:
-        #     - "bash"
-        #     - "-ec"
-        #     - |
-        #       curl --fail -b /tmp/cookies \
-        #         --cookie-jar /tmp/cookies -s -H \
-        #         "Content-Type: application/json" -X POST -d \
-        #         '{"jsonrpc":"2.0","method":"call","params":{"method":"list","service":"db","args":{}}}' \
-        #         0.0.0.0:8069/jsonrpc
-        #   initialDelaySeconds: 30
-        #   periodSeconds: 10
-        #   failureThreshold: 10
-        # livenessProbe:
-        #   exec:
-        #     command:
-        #     - "bash"
-        #     - "-ec"
-        #     - |
-        #       curl --fail -b /tmp/cookies \
-        #         --cookie-jar /tmp/cookies -s -H \
-        #         "Content-Type: application/json" -X POST -d \
-        #         '{"jsonrpc":"2.0","method":"call","params":{"method":"list","service":"db","args":{}}}' \
-        #         0.0.0.0:8069/jsonrpc
-        #   initialDelaySeconds: 60
-        #   failureThreshold: 1
-        #   periodSeconds: 10
       - name: postgre-odoo-demo
         image: postgres:10
         imagePullPolicy: "IfNotPresent"
